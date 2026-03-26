@@ -26,12 +26,13 @@ public class FichajeController {
             @Valid @RequestBody FichajeEntradaRequest request) {
 
         Fichaje nuevoFichaje = fichajeService.registrarEntrada(
-                request.usuarioId(),
-                request.ipRegistro(),
-                request.tipo()
+                request.getUsuarioId(),
+                request.getIpRegistro(),
+                request.getTipo()
         );
 
         FichajeResponse response = modelMapper.map(nuevoFichaje, FichajeResponse.class);
+        response.setUsuarioId(nuevoFichaje.getUsuario().getId());
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

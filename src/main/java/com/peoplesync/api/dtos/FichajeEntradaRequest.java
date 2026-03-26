@@ -2,14 +2,22 @@ package com.peoplesync.api.dtos;
 
 import com.peoplesync.api.enums.TipoFichaje;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.UUID;
 
-public record FichajeEntradaRequest(
-        @NotNull(message = "El ID del usuario es obligatorio")
-        UUID usuarioId,
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class FichajeEntradaRequest {
 
-        @NotNull(message = "El tipo de fichaje es obligatorio")
-        TipoFichaje tipo,
+    @NotNull(message = "El ID del usuario es obligatorio")
+    private UUID usuarioId;
 
-        String ipRegistro
-) {}
+    @NotNull(message = "El tipo de fichaje es obligatorio")
+    private TipoFichaje tipo;
+
+    private String ipRegistro;
+}

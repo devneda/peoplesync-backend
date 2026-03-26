@@ -2,6 +2,7 @@ package com.peoplesync.api.exceptions;
 
 import com.peoplesync.api.dtos.ApiError;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -13,7 +14,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-@RestControllerAdvice
+@RestControllerAdvice @Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -78,7 +79,8 @@ public class GlobalExceptionHandler {
                 request.getRequestURI()
         );
 
-        ex.printStackTrace();
+        // TODO añadir logs
+        log.error("Error crítico no controlado en la ruta {}: {}", request.getRequestURI(), ex.getMessage(), ex);
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(apiError);
     }
