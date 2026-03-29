@@ -2,6 +2,7 @@ package com.peoplesync.api.controllers;
 
 import com.peoplesync.api.dtos.AusenciaRequest;
 import com.peoplesync.api.dtos.AusenciaResponse;
+import com.peoplesync.api.dtos.EstadoAusenciaRequest;
 import com.peoplesync.api.models.Ausencia;
 import com.peoplesync.api.models.Usuario;
 import com.peoplesync.api.repositories.AusenciaRepository;
@@ -15,6 +16,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/ausencias")
@@ -59,6 +61,44 @@ public class AusenciaController {
                     return dto;
                 })
                 .toList();
+
+        return ResponseEntity.ok(response);
+    }
+
+    // =========================================================
+    // KPB -> ENDPOINTS PARA MANAGERS Y ADMINS
+    // =========================================================
+
+    @GetMapping("/pendientes")
+    public ResponseEntity<List<AusenciaResponse>> obtenerPendientes() {
+
+        List<Ausencia> pendientes = ausenciaService.obtenerAusenciasPendientes();
+
+        List<AusenciaResponse> response = pendientes.stream()
+                .map(ausencia -> {
+                    AusenciaResponse dto = modelMapper.map(ausencia, AusenciaResponse.class);
+                    dto.setUsuarioId(ausencia.getUsuario().getId());
+                    return dto;
+                })
+                .toList();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{id}/estado")
+    public ResponseEntity<AusenciaResponse> cambiarEstado(
+            @PathVariable UUID id,
+            @Valid @RequestBody EstadoAusenciaRequest request) {
+
+        // Solo admitimos que la pasen a APROBADA o RECHAZADA
+        if (request.getEstado() == com.peoplesync.api.enums.EstadoAusencia.PENDIENTE) {
+            throw new IllegalArgumentException("El estado debe ser APROBADA o RECHAZADA");
+        }
+
+        Ausencia ausenciaActualizada = ausenciaService.cambiarEstadoAusencia(id, request.getEstado());
+
+        AusenciaResponse response = modelMapper.map(ausenciaActualizada, AusenciaResponse.class);
+        response.setUsuarioId(ausenciaActualizada.getUsuario().getId());
 
         return ResponseEntity.ok(response);
     }

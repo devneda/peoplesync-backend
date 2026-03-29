@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -48,5 +49,25 @@ public class AusenciaService {
                 .build();
 
         return ausenciaRepository.save(nuevaAusencia);
+    }
+
+    // Metodo para listar lo pendiente
+    @Transactional(readOnly = true)
+    public List<Ausencia> obtenerAusenciasPendientes() {
+        return ausenciaRepository.findByEstadoOrderByFechaInicioAsc(EstadoAusencia.PENDIENTE);
+    }
+
+    // Metodo para que el perfil ADMIN (jefe) apruebe o rechace
+    @Transactional
+    public Ausencia cambiarEstadoAusencia(UUID ausenciaId, EstadoAusencia nuevoEstado) {
+        Ausencia ausencia = ausenciaRepository.findById(ausenciaId)
+                .orElseThrow(() -> new IllegalArgumentException("Solicitud de ausencia no encontrada"));
+
+        if (ausencia.getEstado() != EstadoAusencia.PENDIENTE) {
+            throw new IllegalStateException("Esta solicitud ya fue procesada anteriormente (" + ausencia.getEstado() + ")");
+        }
+
+        ausencia.setEstado(nuevoEstado);
+        return ausenciaRepository.save(ausencia);
     }
 }

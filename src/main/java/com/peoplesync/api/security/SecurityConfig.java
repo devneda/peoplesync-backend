@@ -13,7 +13,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-@RequiredArgsConstructor // ¡Añadido para poder inyectar!
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
@@ -26,6 +26,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        // TODO añadir rutas VIP para perfiles ADMIN/MANAGER
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/ausencias/pendientes").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/v1/ausencias/*/estado").hasAnyRole("ADMIN", "MANAGER")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

@@ -11,4 +11,6 @@ import java.util.UUID;
 public interface AusenciaRepository extends JpaRepository<Ausencia, UUID> {
     // Para que el empleado vea todas sus peticiones de vacaciones
     List<Ausencia> findByUsuarioIdOrderByFechaInicioDesc(UUID usuarioId);
+    // Metodo para que un perfil ADMIN pueda ver todas las solicitudes
+    List<Ausencia> findByEstadoOrderByFechaInicioAsc(com.peoplesync.api.enums.EstadoAusencia estado);
 }
