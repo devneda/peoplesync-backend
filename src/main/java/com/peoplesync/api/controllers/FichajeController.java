@@ -3,12 +3,14 @@ package com.peoplesync.api.controllers;
 import com.peoplesync.api.dtos.FichajeEntradaRequest;
 import com.peoplesync.api.dtos.FichajeResponse;
 import com.peoplesync.api.models.Fichaje;
+import com.peoplesync.api.models.Usuario;
 import com.peoplesync.api.services.FichajeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -23,10 +25,11 @@ public class FichajeController {
 
     @PostMapping("/entrada")
     public ResponseEntity<FichajeResponse> registrarEntrada(
-            @Valid @RequestBody FichajeEntradaRequest request) {
+            @Valid @RequestBody FichajeEntradaRequest request,
+            @AuthenticationPrincipal Usuario usuarioAutenticado) {
 
         Fichaje nuevoFichaje = fichajeService.registrarEntrada(
-                request.getUsuarioId(),
+                usuarioAutenticado.getId(),
                 request.getIpRegistro(),
                 request.getTipo()
         );
@@ -37,11 +40,13 @@ public class FichajeController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PutMapping("/{id}/salida")
-    public ResponseEntity<FichajeResponse> registrarSalida(@PathVariable UUID id) {
+    @PutMapping("/salida")
+    public ResponseEntity<FichajeResponse> registrarSalida(@AuthenticationPrincipal Usuario usuarioAutenticado) {
 
-        Fichaje fichajeCerrado = fichajeService.registrarSalida(id);
+        Fichaje fichajeCerrado = fichajeService.registrarSalida(usuarioAutenticado.getId());
         FichajeResponse response = modelMapper.map(fichajeCerrado, FichajeResponse.class);
+
+        response.setUsuarioId(fichajeCerrado.getUsuario().getId());
 
         return ResponseEntity.ok(response);
     }

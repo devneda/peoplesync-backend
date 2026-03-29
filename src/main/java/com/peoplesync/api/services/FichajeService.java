@@ -35,13 +35,10 @@ public class FichajeService {
     }
 
     @Transactional
-    public Fichaje registrarSalida(UUID fichajeId) {
-        Fichaje fichajeAbierto = fichajeRepository.findById(fichajeId)
-                .orElseThrow(() -> new IllegalArgumentException("Fichaje no encontrado"));
-
-        if (fichajeAbierto.getFechaHoraSalida() != null) {
-            throw new IllegalStateException("Este fichaje ya tiene una hora de salida registrada");
-        }
+    public Fichaje registrarSalida(UUID usuarioId) {
+        // Buscamos si el usuario tiene un fichaje a medias (sin salida)
+        Fichaje fichajeAbierto = fichajeRepository.findFirstByUsuarioIdAndFechaHoraSalidaIsNullOrderByFechaHoraEntradaDesc(usuarioId)
+                .orElseThrow(() -> new IllegalStateException("No tienes ningún fichaje abierto en este momento"));
 
         fichajeAbierto.setFechaHoraSalida(LocalDateTime.now());
         return fichajeRepository.save(fichajeAbierto);

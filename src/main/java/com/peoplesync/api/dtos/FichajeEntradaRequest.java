@@ -13,9 +13,6 @@ import java.util.UUID;
 @AllArgsConstructor
 public class FichajeEntradaRequest {
 
-    @NotNull(message = "El ID del usuario es obligatorio")
-    private UUID usuarioId;
-
     @NotNull(message = "El tipo de fichaje es obligatorio")
     private TipoFichaje tipo;
 

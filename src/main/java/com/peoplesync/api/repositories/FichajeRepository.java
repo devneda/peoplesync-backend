@@ -4,11 +4,11 @@ import com.peoplesync.api.models.Fichaje;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface FichajeRepository extends JpaRepository<Fichaje, UUID> {
-    // Para sacar el historial de fichajes de un usuario concreto
-    List<Fichaje> findByUsuarioIdOrderByFechaHoraEntradaDesc(UUID usuarioId);
+    // Busca el último fichaje de un usuario que todavía no tenga hora de salida
+    Optional<Fichaje> findFirstByUsuarioIdAndFechaHoraSalidaIsNullOrderByFechaHoraEntradaDesc(UUID usuarioId);
 }

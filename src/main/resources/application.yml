@@ -30,3 +30,9 @@ logging:
   level:
     root: INFO
     com.peoplesync.api: DEBUG
+
+security:
+  jwt:
+    # TODO este token debe ir en el fichero .env cuando se lance a prod
+    secret-key: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+    expiration: 86400000 # El token caduca en 1 día
