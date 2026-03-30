@@ -26,9 +26,13 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/v1/usuarios/me/password").authenticated()
                         // TODO añadir rutas VIP para perfiles ADMIN/MANAGER
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/ausencias/pendientes").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/v1/ausencias/*/estado").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/usuarios/mis-empleados").hasAnyRole("ADMIN", "MANAGER")
+                        // --- CRUD DE USUARIOS (SOLO ADMIN) ---
+                        .requestMatchers("/api/v1/usuarios/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
