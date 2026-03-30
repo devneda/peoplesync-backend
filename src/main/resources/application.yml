@@ -3,9 +3,9 @@ spring:
     name: peoplesync-backend
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/peoplesync_db
-    username: admin
-    password: admin
+    url: jdbc:postgresql://localhost:5432/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -34,5 +34,5 @@ logging:
 security:
   jwt:
     # TODO este token debe ir en el fichero .env cuando se lance a prod
-    secret-key: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
-    expiration: 86400000 # El token caduca en 1 día
+    secret-key: ${JWT_SECRET_KEY}
+    expiration: ${JWT_EXPIRATION} # El token caduca en 1 día
