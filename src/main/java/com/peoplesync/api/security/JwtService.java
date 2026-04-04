@@ -1,5 +1,6 @@
 package com.peoplesync.api.security;
 
+import com.peoplesync.api.models.Usuario;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -24,16 +25,29 @@ public class JwtService {
     private long jwtExpiration;
 
     public String generateToken(UserDetails userDetails) {
-        return generateToken(new HashMap<>(), userDetails);
+        if (userDetails instanceof Usuario) {
+            return generateToken((Usuario) userDetails);
+        }
+
+        return Jwts.builder()
+                .subject(userDetails.getUsername())
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
+                .signWith(getSignInKey())
+                .compact();
     }
 
-    public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
+    public String generateToken(Usuario usuario) {
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("rol", usuario.getRol().name());
+        extraClaims.put("id", usuario.getId().toString());
+
         return Jwts.builder()
                 .claims(extraClaims)
-                .subject(userDetails.getUsername()) // El email del usuario
-                .issuedAt(new Date(System.currentTimeMillis())) // Fecha de creación
-                .expiration(new Date(System.currentTimeMillis() + jwtExpiration)) // Fecha de caducidad
-                .signWith(getSignInKey()) // Firmamos con nuestra clave secreta
+                .subject(usuario.getEmail())
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
+                .signWith(getSignInKey())
                 .compact();
     }
 
