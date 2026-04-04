@@ -31,6 +31,7 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/ausencias/pendientes").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/v1/ausencias/*/estado").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/usuarios/mis-empleados").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/fichajes/reporte/*").hasAnyRole("ADMIN", "MANAGER")
                         // --- CRUD DE USUARIOS (SOLO ADMIN) ---
                         .requestMatchers("/api/v1/usuarios/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
