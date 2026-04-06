@@ -1,6 +1,5 @@
 package com.peoplesync.api.controllers;
 
-import com.peoplesync.api.dtos.AusenciaRequest;
 import com.peoplesync.api.dtos.AusenciaResponse;
 import com.peoplesync.api.dtos.EstadoAusenciaRequest;
 import com.peoplesync.api.models.Ausencia;
@@ -14,7 +13,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.format.annotation.DateTimeFormat;
+import com.peoplesync.api.enums.TipoAusencia;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,18 +30,22 @@ public class AusenciaController {
     private final AusenciaRepository ausenciaRepository;
     private final ModelMapper modelMapper;
 
-    // Endpoint para solicitar una nueva ausencia (Vacaciones, Baja, etc.)
-    @PostMapping
+    @PostMapping(consumes = {"multipart/form-data"})
     public ResponseEntity<AusenciaResponse> solicitarAusencia(
-            @Valid @RequestBody AusenciaRequest request,
+            @RequestParam("tipo") TipoAusencia tipo,
+            @RequestParam("fechaInicio") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
+            @RequestParam("fechaFin") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
+            @RequestParam(value = "comentarios", required = false) String comentarios,
+            @RequestParam(value = "documento", required = false) MultipartFile documento,
             @AuthenticationPrincipal Usuario usuarioAutenticado) {
 
         Ausencia nuevaAusencia = ausenciaService.solicitarAusencia(
                 usuarioAutenticado.getId(),
-                request.getTipo(),
-                request.getFechaInicio(),
-                request.getFechaFin(),
-                request.getComentarios()
+                tipo,
+                fechaInicio,
+                fechaFin,
+                comentarios,
+                documento // Pasamos el archivo al servicio
         );
 
         AusenciaResponse response = modelMapper.map(nuevaAusencia, AusenciaResponse.class);

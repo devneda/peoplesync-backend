@@ -20,4 +20,5 @@ public class AusenciaResponse {
     private LocalDate fechaFin;
     private EstadoAusencia estado; // PENDIENTE, APROBADA, RECHAZADA
     private String comentarios;
+    private String rutaJustificante;
 }

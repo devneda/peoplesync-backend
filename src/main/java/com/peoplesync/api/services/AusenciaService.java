@@ -9,6 +9,12 @@ import com.peoplesync.api.repositories.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.util.StringUtils;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -23,7 +29,7 @@ public class AusenciaService {
     private final UsuarioRepository usuarioRepository;
 
     @Transactional
-    public Ausencia solicitarAusencia(UUID usuarioId, TipoAusencia tipo, LocalDate inicio, LocalDate fin, String comentarios) {
+    public Ausencia solicitarAusencia(UUID usuarioId, TipoAusencia tipo, LocalDate inicio, LocalDate fin, String comentarios, MultipartFile documento) {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
@@ -31,11 +37,32 @@ public class AusenciaService {
             throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha de fin");
         }
 
-        // Si es VACACIONES, comprobar si tiene días suficientes
         if (tipo == TipoAusencia.VACACIONES) {
             long diasSolicitados = ChronoUnit.DAYS.between(inicio, fin) + 1;
             if (diasSolicitados > usuario.getDiasVacacionesAnuales()) {
                 throw new IllegalStateException("No tienes suficientes días de vacaciones disponibles (" + usuario.getDiasVacacionesAnuales() + ")");
+            }
+        }
+
+        // --- LÓGICA DE GUARDADO DEL DOCUMENTO ANONIMIZADO ---
+        String nombreSeguroArchivo = null;
+        if (documento != null && !documento.isEmpty()) {
+            try {
+                // Sacamos la extensión (por ejemplo, ".pdf" o ".jpg")
+                String extension = StringUtils.getFilenameExtension(documento.getOriginalFilename());
+                // Generamos un UUID seguro para el nombre del fichero
+                nombreSeguroArchivo = UUID.randomUUID().toString() + "." + extension;
+
+                Path directorioUploads = Paths.get("uploads");
+                if (!Files.exists(directorioUploads)) {
+                    Files.createDirectories(directorioUploads);
+                }
+
+                Path rutaFinal = directorioUploads.resolve(nombreSeguroArchivo);
+                Files.copy(documento.getInputStream(), rutaFinal, StandardCopyOption.REPLACE_EXISTING);
+
+            } catch (Exception e) {
+                throw new RuntimeException("Error al procesar el documento justificativo", e);
             }
         }
 
@@ -45,12 +72,12 @@ public class AusenciaService {
                 .fechaInicio(inicio)
                 .fechaFin(fin)
                 .comentarios(comentarios)
+                .rutaJustificante(nombreSeguroArchivo) // Guardamos el nombre anonimizado
                 .estado(EstadoAusencia.PENDIENTE)
                 .build();
 
         return ausenciaRepository.save(nuevaAusencia);
     }
-
     // Metodo para listar lo pendiente
     @Transactional(readOnly = true)
     public List<Ausencia> obtenerAusenciasPendientes() {
