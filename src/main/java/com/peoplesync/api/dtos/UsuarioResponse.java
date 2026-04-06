@@ -20,4 +20,5 @@ public class UsuarioResponse {
     private Integer diasVacacionesAnuales;
     private UUID managerId;
     private LocalDateTime createdAt;
+    private Boolean activo;
 }

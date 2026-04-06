@@ -104,4 +104,10 @@ public class UsuarioController {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> desactivarUsuario(@PathVariable UUID id) {
+        usuarioService.desactivarUsuario(id);
+        return ResponseEntity.ok("Usuario desactivado correctamente. Ya no podrá iniciar sesión.");
+    }
 }

@@ -54,6 +54,9 @@ public class Usuario implements UserDetails {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "activo", nullable = false)
+    private Boolean activo = true;
+
     // --- MÉTODOS DE SPRING SECURITY (UserDetails) ---
 
     @Override
@@ -90,6 +93,6 @@ public class Usuario implements UserDetails {
     // TODO en el futuro se puede añadir la funcion para habilitar un usuario (activo/inactivo)
     @Override
     public boolean isEnabled() {
-        return true;
+        return this.activo;
     }
 }

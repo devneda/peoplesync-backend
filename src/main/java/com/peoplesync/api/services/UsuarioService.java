@@ -136,4 +136,16 @@ public class UsuarioService {
         usuario.setPasswordHash(passwordEncoder.encode(request.getPasswordNueva()));
         usuarioRepository.save(usuario);
     }
+
+    @Transactional
+    public void desactivarUsuario(UUID id) {
+        Usuario usuario = obtenerUsuarioPorId(id);
+
+        if (!usuario.getActivo()) {
+            throw new IllegalStateException("El usuario ya está desactivado");
+        }
+
+        usuario.setActivo(false);
+        usuarioRepository.save(usuario);
+    }
 }
