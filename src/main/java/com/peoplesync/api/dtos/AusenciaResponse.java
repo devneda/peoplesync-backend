@@ -15,6 +15,7 @@ import java.util.UUID;
 public class AusenciaResponse {
     private UUID id;
     private UUID usuarioId;
+    private String usuarioNombre;
     private TipoAusencia tipo;
     private LocalDate fechaInicio;
     private LocalDate fechaFin;

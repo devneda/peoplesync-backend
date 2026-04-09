@@ -19,6 +19,7 @@ public class UsuarioResponse {
     private Rol rol;
     private Integer diasVacacionesAnuales;
     private UUID managerId;
+    private UUID delegacionId;
     private LocalDateTime createdAt;
     private Boolean activo;
 }

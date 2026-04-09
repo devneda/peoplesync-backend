@@ -32,7 +32,16 @@ public class UsuarioController {
         List<Usuario> empleados = usuarioService.obtenerMisEmpleados(managerAutenticado.getId());
 
         List<UsuarioResponse> response = empleados.stream()
-                .map(u -> modelMapper.map(u, UsuarioResponse.class))
+                .map(u -> {
+                    UsuarioResponse dto = modelMapper.map(u, UsuarioResponse.class);
+                    if (u.getManager() != null) {
+                        dto.setManagerId(u.getManager().getId());
+                    }
+                    if (u.getDelegacion() != null) {
+                        dto.setDelegacionId(u.getDelegacion().getId());
+                    }
+                    return dto;
+                })
                 .toList();
 
         return ResponseEntity.ok(response);
@@ -45,9 +54,11 @@ public class UsuarioController {
         List<UsuarioResponse> response = usuarios.stream()
                 .map(u -> {
                     UsuarioResponse dto = modelMapper.map(u, UsuarioResponse.class);
-                    // Si el usuario tiene jefe, sacamos su ID para el DTO
                     if (u.getManager() != null) {
                         dto.setManagerId(u.getManager().getId());
+                    }
+                    if (u.getDelegacion() != null) {
+                        dto.setDelegacionId(u.getDelegacion().getId());
                     }
                     return dto;
                 })

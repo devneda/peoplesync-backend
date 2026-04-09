@@ -1,0 +1,2 @@
+ALTER TABLE usuarios ADD COLUMN activo BOOLEAN DEFAULT true;
+ALTER TABLE ausencias ADD COLUMN documento_path VARCHAR(255);

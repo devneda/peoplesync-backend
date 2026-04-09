@@ -15,6 +15,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import java.net.MalformedURLException;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -96,5 +99,38 @@ public class AusenciaService {
 
         ausencia.setEstado(nuevoEstado);
         return ausenciaRepository.save(ausencia);
+    }
+
+    // Metodo para que solo managers directos o el dueño del documento lo pueda descargar
+    public Resource cargarJustificante(UUID ausenciaId, Usuario usuarioAutenticado) {
+        Ausencia ausencia = ausenciaRepository.findById(ausenciaId)
+                .orElseThrow(() -> new IllegalArgumentException("Ausencia no encontrada"));
+
+        // SEGURIDAD RGPD: Solo el dueño, su manager o un ADMIN pueden verlo
+        boolean esDueno = ausencia.getUsuario().getId().equals(usuarioAutenticado.getId());
+        boolean esSuManager = ausencia.getUsuario().getManager() != null &&
+                ausencia.getUsuario().getManager().getId().equals(usuarioAutenticado.getId());
+        boolean esAdmin = usuarioAutenticado.getRol() == com.peoplesync.api.enums.Rol.ADMIN;
+
+        if (!esDueno && !esSuManager && !esAdmin) {
+            throw new org.springframework.security.access.AccessDeniedException("No tienes permiso para ver este documento");
+        }
+
+        if (ausencia.getRutaJustificante() == null) {
+            throw new IllegalArgumentException("Esta ausencia no tiene documento adjunto");
+        }
+
+        try {
+            Path rutaArchivo = Paths.get("uploads").resolve(ausencia.getRutaJustificante());
+            Resource recurso = new UrlResource(rutaArchivo.toUri());
+
+            if (recurso.exists() || recurso.isReadable()) {
+                return recurso;
+            } else {
+                throw new RuntimeException("No se puede leer el archivo");
+            }
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Error al recuperar el archivo", e);
+        }
     }
 }

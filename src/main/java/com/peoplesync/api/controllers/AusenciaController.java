@@ -16,7 +16,12 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.format.annotation.DateTimeFormat;
 import com.peoplesync.api.enums.TipoAusencia;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import java.io.IOException;
 
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -72,6 +77,27 @@ public class AusenciaController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/{id}/documento")
+    public ResponseEntity<Resource> descargarDocumento(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal Usuario usuarioAutenticado) throws IOException {
+
+        Resource recurso = ausenciaService.cargarJustificante(id, usuarioAutenticado);
+
+        // Intentamos determinar el tipo de contenido (PDF, JPG, etc.)
+        String contentType = "application/octet-stream";
+        try {
+            contentType = java.nio.file.Files.probeContentType(Paths.get(recurso.getURI()));
+        } catch (IOException ex) {
+            // Si falla, usamos el genérico
+        }
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + recurso.getFilename() + "\"")
+                .body(recurso);
+    }
+
     // =========================================================
     // KPB -> ENDPOINTS PARA MANAGERS Y ADMINS
     // =========================================================
@@ -85,6 +111,7 @@ public class AusenciaController {
                 .map(ausencia -> {
                     AusenciaResponse dto = modelMapper.map(ausencia, AusenciaResponse.class);
                     dto.setUsuarioId(ausencia.getUsuario().getId());
+                    dto.setUsuarioNombre(ausencia.getUsuario().getNombreCompleto());
                     return dto;
                 })
                 .toList();
