@@ -29,6 +29,10 @@ public class Horario {
     @Column(name = "horas_semanales", nullable = false, precision = 5, scale = 2)
     private BigDecimal horasSemanales;
 
+    @Column(name = "minutos_descanso", nullable = false)
+    @Builder.Default
+    private Integer minutosDescanso = 0;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

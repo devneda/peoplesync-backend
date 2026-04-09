@@ -56,6 +56,22 @@ public class Usuario implements UserDetails {
 
     @Column(name = "activo", nullable = false)
     private Boolean activo = true;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "calendario_id")
+    private Calendario calendario;
+
+    // Puede tener un horario fijo...
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "horario_fijo_id")
+    private Horario horarioFijo;
+
+    // ... o puede tener un patrón de rotación
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "patron_rotacion_id")
+    private PatronRotacion patronRotacion;
+
+    @Column(name = "fecha_inicio_patron")
+    private java.time.LocalDate fechaInicioPatron;
 
     // --- MÉTODOS DE SPRING SECURITY (UserDetails) ---
 
