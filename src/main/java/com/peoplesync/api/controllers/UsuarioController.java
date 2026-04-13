@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -75,6 +76,24 @@ public class UsuarioController {
         if (usuario.getManager() != null) {
             response.setManagerId(usuario.getManager().getId());
         }
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/managers")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<UsuarioResponse>> obtenerManagers() {
+        List<Usuario> managers = usuarioService.obtenerManagers();
+
+        List<UsuarioResponse> response = managers.stream()
+                .map(m -> {
+                    UsuarioResponse dto = modelMapper.map(m, UsuarioResponse.class);
+                    if (m.getDelegacion() != null) {
+                        dto.setDelegacionId(m.getDelegacion().getId());
+                    }
+                    return dto;
+                })
+                .toList();
 
         return ResponseEntity.ok(response);
     }

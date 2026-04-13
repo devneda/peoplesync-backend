@@ -37,4 +37,8 @@ public class UsuarioRequest {
 
     @NotNull(message = "La delegación es obligatoria")
     private UUID delegacionId;
+
+    private UUID calendarioId;
+    private UUID horarioId;
+    private UUID patronId;
 }

@@ -4,7 +4,10 @@ import com.peoplesync.api.dtos.UsuarioRequest;
 import com.peoplesync.api.dtos.UsuarioUpdateRequest;
 import com.peoplesync.api.models.Delegacion;
 import com.peoplesync.api.models.Usuario;
+import com.peoplesync.api.repositories.CalendarioRepository;
 import com.peoplesync.api.repositories.DelegacionRepository;
+import com.peoplesync.api.repositories.HorarioRepository;
+import com.peoplesync.api.repositories.PatronRotacionRepository;
 import com.peoplesync.api.repositories.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -13,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.peoplesync.api.dtos.CambiarPasswordRequest;
 import org.springframework.security.authentication.BadCredentialsException;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,6 +26,10 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final DelegacionRepository delegacionRepository;
+    private final CalendarioRepository calendarioRepository;
+    private final HorarioRepository horarioRepository;
+    private final PatronRotacionRepository patronRotacionRepository;
+
     private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
@@ -40,41 +48,53 @@ public class UsuarioService {
         return usuarioRepository.findByManagerId(managerId);
     }
 
+    @Transactional(readOnly = true)
+    public List<Usuario> obtenerManagers() {
+        return usuarioRepository.findByRol(com.peoplesync.api.enums.Rol.MANAGER);
+    }
+
     @Transactional
     public Usuario crearUsuario(UsuarioRequest request) {
 
-        // 1. Comprobamos si el email ya existe
         if (usuarioRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Ya existe un usuario con el email: " + request.getEmail());
         }
 
-        // 2. Comprobamos si el DNI ya existe
         if (usuarioRepository.existsByDni(request.getDni())) {
             throw new IllegalArgumentException("Ya existe un usuario con el DNI: " + request.getDni());
         }
 
-        // 3. Buscamos la delegación
         Delegacion delegacion = delegacionRepository.findById(request.getDelegacionId())
                 .orElseThrow(() -> new IllegalArgumentException("La delegación especificada no existe"));
 
-        // 4. Creamos el usuario
         Usuario nuevoUsuario = new Usuario();
         nuevoUsuario.setDni(request.getDni());
         nuevoUsuario.setNombreCompleto(request.getNombreCompleto());
         nuevoUsuario.setEmail(request.getEmail());
-
-        // Ciframos la contraseña
         nuevoUsuario.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-
         nuevoUsuario.setRol(request.getRol());
         nuevoUsuario.setDiasVacacionesAnuales(request.getDiasVacacionesAnuales() != null ? request.getDiasVacacionesAnuales() : 22);
         nuevoUsuario.setDelegacion(delegacion);
+        nuevoUsuario.setActivo(true);
 
-        // Compruebo si se le asigna un manager
+        // Asignar manager
         if (request.getManagerId() != null) {
             Usuario manager = usuarioRepository.findById(request.getManagerId())
                     .orElseThrow(() -> new IllegalArgumentException("El manager especificado no existe"));
             nuevoUsuario.setManager(manager);
+        }
+
+        if (request.getCalendarioId() != null) {
+            calendarioRepository.findById(request.getCalendarioId()).ifPresent(nuevoUsuario::setCalendario);
+        }
+
+        if (request.getHorarioId() != null) {
+            horarioRepository.findById(request.getHorarioId()).ifPresent(nuevoUsuario::setHorarioFijo);
+        }
+
+        if (request.getPatronId() != null) {
+            patronRotacionRepository.findById(request.getPatronId()).ifPresent(nuevoUsuario::setPatronRotacion);
+            nuevoUsuario.setFechaInicioPatron(LocalDate.now()); // El ciclo empieza hoy
         }
 
         return usuarioRepository.save(nuevoUsuario);
@@ -84,12 +104,10 @@ public class UsuarioService {
     public Usuario actualizarUsuario(UUID id, UsuarioUpdateRequest request) {
         Usuario usuarioActual = obtenerUsuarioPorId(id);
 
-        // compruebo si el dni existe en bbdd
         if (!usuarioActual.getDni().equals(request.getDni()) && usuarioRepository.existsByDni(request.getDni())) {
             throw new IllegalArgumentException("Ya existe otro usuario con el DNI: " + request.getDni());
         }
 
-        // compruebo si el email existe en bbdd
         if (!usuarioActual.getEmail().equals(request.getEmail()) && usuarioRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Ya existe otro usuario con el email: " + request.getEmail());
         }
@@ -97,7 +115,6 @@ public class UsuarioService {
         Delegacion delegacion = delegacionRepository.findById(request.getDelegacionId())
                 .orElseThrow(() -> new IllegalArgumentException("La delegación especificada no existe"));
 
-        // actualizo los datos
         usuarioActual.setDni(request.getDni());
         usuarioActual.setNombreCompleto(request.getNombreCompleto());
         usuarioActual.setEmail(request.getEmail());
@@ -108,12 +125,10 @@ public class UsuarioService {
             usuarioActual.setDiasVacacionesAnuales(request.getDiasVacacionesAnuales());
         }
 
-        // si envia una nueva contraseña, debo cifrarla antes de guardarla
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
             usuarioActual.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         }
 
-        // si envia nuevo manager, lo actualizo en bbdd
         if (request.getManagerId() != null) {
             Usuario manager = usuarioRepository.findById(request.getManagerId())
                     .orElseThrow(() -> new IllegalArgumentException("El manager especificado no existe"));

@@ -14,6 +14,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
     Optional<Usuario> findByEmail(String email);
 
     List<Usuario> findByManagerId(UUID managerId);
+    List<Usuario> findByRol(com.peoplesync.api.enums.Rol rol);
 
     // TODO evitar crear usuarios con el mismo DNI
     boolean existsByDni(String dni);
