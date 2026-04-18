@@ -25,7 +25,7 @@ CREATE TABLE usuarios (
     nombre_completo VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-    rol VARCHAR(20) NOT NULL CHECK (rol IN ('ADMIN', 'USER')),
+    rol VARCHAR(50) NOT NULL CHECK (rol IN ('ADMIN', 'MANAGER', 'USER')),
     dias_vacaciones_anuales INTEGER DEFAULT 22,
     delegacion_id UUID NOT NULL,
     manager_id UUID,
