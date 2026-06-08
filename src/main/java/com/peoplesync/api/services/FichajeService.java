@@ -24,6 +24,10 @@ public class FichajeService {
 
     @Transactional
     public Fichaje registrarEntrada(UUID usuarioId, String ipRegistro, TipoFichaje tipo) {
+        if (tieneFichajeAbierto(usuarioId)) {
+            throw new IllegalStateException("Ya tienes un fichaje abierto. Debes cerrarlo antes de iniciar uno nuevo.");
+        }
+
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
@@ -35,6 +39,26 @@ public class FichajeService {
                 .build();
 
         return fichajeRepository.save(nuevoFichaje);
+    }
+
+    @Transactional
+    public Fichaje registrarManual(UUID usuarioId, LocalDateTime entrada, LocalDateTime salida, TipoFichaje tipo) {
+        if (entrada.isAfter(salida)) {
+            throw new IllegalArgumentException("La hora de entrada no puede ser posterior a la de salida");
+        }
+
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+        Fichaje manual = Fichaje.builder()
+                .usuario(usuario)
+                .fechaHoraEntrada(entrada)
+                .fechaHoraSalida(salida)
+                .tipo(tipo)
+                .ipRegistro("MANUAL")
+                .build();
+
+        return fichajeRepository.save(manual);
     }
 
     @Transactional

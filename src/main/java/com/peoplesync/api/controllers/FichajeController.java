@@ -37,6 +37,16 @@ public class FichajeController {
         return ResponseEntity.status(HttpStatus.CREATED).body(convertToDto(nuevo));
     }
 
+    @PostMapping("/manual")
+    public ResponseEntity<FichajeResponse> registrarManual(
+            @AuthenticationPrincipal Usuario usuario,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime entrada,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime salida,
+            @RequestParam com.peoplesync.api.enums.TipoFichaje tipo) {
+        Fichaje manual = fichajeService.registrarManual(usuario.getId(), entrada, salida, tipo);
+        return ResponseEntity.status(HttpStatus.CREATED).body(convertToDto(manual));
+    }
+
     @PutMapping("/salida")
     public ResponseEntity<FichajeResponse> registrarSalida(@AuthenticationPrincipal Usuario usuario) {
         Fichaje cerrado = fichajeService.registrarSalida(usuario.getId());

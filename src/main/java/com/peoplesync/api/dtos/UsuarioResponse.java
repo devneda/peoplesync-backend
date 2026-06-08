@@ -22,4 +22,5 @@ public class UsuarioResponse {
     private UUID delegacionId;
     private LocalDateTime createdAt;
     private Boolean activo;
+    private String fotoUrl;
 }
