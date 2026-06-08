@@ -1,20 +1,17 @@
 package com.peoplesync.api.services;
 
+import com.peoplesync.api.dtos.CambiarPasswordRequest;
 import com.peoplesync.api.dtos.UsuarioRequest;
 import com.peoplesync.api.dtos.UsuarioUpdateRequest;
 import com.peoplesync.api.models.Delegacion;
 import com.peoplesync.api.models.Usuario;
-import com.peoplesync.api.repositories.CalendarioRepository;
-import com.peoplesync.api.repositories.DelegacionRepository;
-import com.peoplesync.api.repositories.HorarioRepository;
-import com.peoplesync.api.repositories.PatronRotacionRepository;
-import com.peoplesync.api.repositories.UsuarioRepository;
+import com.peoplesync.api.repositories.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.peoplesync.api.dtos.CambiarPasswordRequest;
-import org.springframework.security.authentication.BadCredentialsException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -29,39 +26,37 @@ public class UsuarioService {
     private final CalendarioRepository calendarioRepository;
     private final HorarioRepository horarioRepository;
     private final PatronRotacionRepository patronRotacionRepository;
-
     private final PasswordEncoder passwordEncoder;
 
-    @Transactional(readOnly = true)
+    public List<Usuario> obtenerMisEmpleados() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof Usuario manager) {
+            return usuarioRepository.findByManager(manager);
+        }
+        throw new IllegalStateException("No hay un usuario autenticado");
+    }
+
     public List<Usuario> obtenerTodosLosUsuarios() {
         return usuarioRepository.findAll();
     }
 
-    @Transactional(readOnly = true)
     public Usuario obtenerUsuarioPorId(UUID id) {
         return usuarioRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con ID: " + id));
     }
 
-    @Transactional(readOnly = true)
-    public List<Usuario> obtenerMisEmpleados(UUID managerId) {
-        return usuarioRepository.findByManagerId(managerId);
-    }
-
-    @Transactional(readOnly = true)
     public List<Usuario> obtenerManagers() {
-        return usuarioRepository.findByRol(com.peoplesync.api.enums.Rol.MANAGER);
+        return usuarioRepository.findManagers();
     }
 
     @Transactional
     public Usuario crearUsuario(UsuarioRequest request) {
+        if (usuarioRepository.existsByDni(request.getDni())) {
+            throw new IllegalArgumentException("Ya existe un usuario con el DNI: " + request.getDni());
+        }
 
         if (usuarioRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Ya existe un usuario con el email: " + request.getEmail());
-        }
-
-        if (usuarioRepository.existsByDni(request.getDni())) {
-            throw new IllegalArgumentException("Ya existe un usuario con el DNI: " + request.getDni());
         }
 
         Delegacion delegacion = delegacionRepository.findById(request.getDelegacionId())
@@ -79,7 +74,6 @@ public class UsuarioService {
         nuevoUsuario.setRequiereCambioPassword(true);
         nuevoUsuario.setFotoUrl(request.getFotoUrl());
 
-        // Asignar manager
         if (request.getManagerId() != null) {
             Usuario manager = usuarioRepository.findById(request.getManagerId())
                     .orElseThrow(() -> new IllegalArgumentException("El manager especificado no existe"));
@@ -91,12 +85,12 @@ public class UsuarioService {
         }
 
         if (request.getHorarioId() != null) {
-            horarioRepository.findById(request.getHorarioId()).ifPresent(nuevoUsuario::setHorarioFijo);
+            horarioRepository.findById(request.getHorarioId()).ifPresent(nuevoUsuario::setHorario);
         }
 
         if (request.getPatronId() != null) {
-            patronRotacionRepository.findById(request.getPatronId()).ifPresent(nuevoUsuario::setPatronRotacion);
-            nuevoUsuario.setFechaInicioPatron(LocalDate.now()); // El ciclo empieza hoy
+            patronRotacionRepository.findById(request.getPatronId()).ifPresent(nuevoUsuario::setPatron);
+            nuevoUsuario.setFechaInicioPatron(LocalDate.now());
         }
 
         return usuarioRepository.save(nuevoUsuario);

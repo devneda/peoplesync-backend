@@ -9,14 +9,13 @@ import com.peoplesync.api.services.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/usuarios")
@@ -27,112 +26,58 @@ public class UsuarioController {
     private final ModelMapper modelMapper;
 
     @GetMapping("/mis-empleados")
-    public ResponseEntity<List<UsuarioResponse>> obtenerMisEmpleados(
-            @AuthenticationPrincipal Usuario managerAutenticado) {
-
-        List<Usuario> empleados = usuarioService.obtenerMisEmpleados(managerAutenticado.getId());
-
+    public ResponseEntity<List<UsuarioResponse>> obtenerMisEmpleados() {
+        List<Usuario> empleados = usuarioService.obtenerMisEmpleados();
         List<UsuarioResponse> response = empleados.stream()
-                .map(u -> {
-                    UsuarioResponse dto = modelMapper.map(u, UsuarioResponse.class);
-                    if (u.getManager() != null) {
-                        dto.setManagerId(u.getManager().getId());
-                    }
-                    if (u.getDelegacion() != null) {
-                        dto.setDelegacionId(u.getDelegacion().getId());
-                    }
-                    return dto;
-                })
-                .toList();
-
-        return ResponseEntity.ok(response);
-    }
-
-    @GetMapping
-    public ResponseEntity<List<UsuarioResponse>> listarUsuarios() {
-        List<Usuario> usuarios = usuarioService.obtenerTodosLosUsuarios();
-
-        List<UsuarioResponse> response = usuarios.stream()
-                .map(u -> {
-                    UsuarioResponse dto = modelMapper.map(u, UsuarioResponse.class);
-                    if (u.getManager() != null) {
-                        dto.setManagerId(u.getManager().getId());
-                    }
-                    if (u.getDelegacion() != null) {
-                        dto.setDelegacionId(u.getDelegacion().getId());
-                    }
-                    return dto;
-                })
-                .toList();
-
+                .map(u -> modelMapper.map(u, UsuarioResponse.class))
+                .collect(Collectors.toList());
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UsuarioResponse> obtenerUsuario(@PathVariable UUID id) {
+    public ResponseEntity<UsuarioResponse> obtenerUsuarioPorId(@PathVariable UUID id) {
         Usuario usuario = usuarioService.obtenerUsuarioPorId(id);
-        UsuarioResponse response = modelMapper.map(usuario, UsuarioResponse.class);
+        return ResponseEntity.ok(modelMapper.map(usuario, UsuarioResponse.class));
+    }
 
-        if (usuario.getManager() != null) {
-            response.setManagerId(usuario.getManager().getId());
-        }
-
+    @GetMapping
+    public ResponseEntity<List<UsuarioResponse>> obtenerTodosLosUsuarios() {
+        List<Usuario> usuarios = usuarioService.obtenerTodosLosUsuarios();
+        List<UsuarioResponse> response = usuarios.stream()
+                .map(u -> modelMapper.map(u, UsuarioResponse.class))
+                .collect(Collectors.toList());
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/managers")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UsuarioResponse>> obtenerManagers() {
         List<Usuario> managers = usuarioService.obtenerManagers();
-
         List<UsuarioResponse> response = managers.stream()
-                .map(m -> {
-                    UsuarioResponse dto = modelMapper.map(m, UsuarioResponse.class);
-                    if (m.getDelegacion() != null) {
-                        dto.setDelegacionId(m.getDelegacion().getId());
-                    }
-                    return dto;
-                })
-                .toList();
-
+                .map(u -> modelMapper.map(u, UsuarioResponse.class))
+                .collect(Collectors.toList());
         return ResponseEntity.ok(response);
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<UsuarioResponse> actualizarUsuario(
-            @PathVariable UUID id,
-            @Valid @RequestBody UsuarioUpdateRequest request) {
-
-        Usuario usuarioActualizado = usuarioService.actualizarUsuario(id, request);
-        UsuarioResponse response = modelMapper.map(usuarioActualizado, UsuarioResponse.class);
-
-        if (usuarioActualizado.getManager() != null) {
-            response.setManagerId(usuarioActualizado.getManager().getId());
-        }
-
-        return ResponseEntity.ok(response);
-    }
-
-    @PutMapping("/me/password")
-    public ResponseEntity<String> cambiarMiPassword(
-            @Valid @RequestBody CambiarPasswordRequest request,
-            @AuthenticationPrincipal Usuario usuarioAutenticado) {
-
-        usuarioService.cambiarMiPassword(usuarioAutenticado.getId(), request);
-
-        return ResponseEntity.ok("Contraseña actualizada con éxito");
     }
 
     @PostMapping
     public ResponseEntity<UsuarioResponse> crearUsuario(@Valid @RequestBody UsuarioRequest request) {
         Usuario nuevoUsuario = usuarioService.crearUsuario(request);
-        UsuarioResponse response = modelMapper.map(nuevoUsuario, UsuarioResponse.class);
+        return ResponseEntity.ok(modelMapper.map(nuevoUsuario, UsuarioResponse.class));
+    }
 
-        if (nuevoUsuario.getManager() != null) {
-            response.setManagerId(nuevoUsuario.getManager().getId());
+    @PutMapping("/{id}")
+    public ResponseEntity<UsuarioResponse> actualizarUsuario(@PathVariable UUID id, @Valid @RequestBody UsuarioUpdateRequest request) {
+        Usuario usuarioActualizado = usuarioService.actualizarUsuario(id, request);
+        return ResponseEntity.ok(modelMapper.map(usuarioActualizado, UsuarioResponse.class));
+    }
+
+    @PutMapping("/me/password")
+    public ResponseEntity<String> cambiarMiPassword(@Valid @RequestBody CambiarPasswordRequest request) {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof Usuario usuario) {
+            usuarioService.cambiarMiPassword(usuario.getId(), request);
+            return ResponseEntity.ok("Contraseña actualizada correctamente.");
         }
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        throw new IllegalStateException("No hay un usuario autenticado");
     }
 
     @DeleteMapping("/{id}")

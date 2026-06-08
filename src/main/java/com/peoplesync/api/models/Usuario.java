@@ -8,6 +8,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -52,6 +53,9 @@ public class Usuario implements UserDetails {
 
     @Column(name = "requiere_cambio_password", nullable = false)
     private Boolean requiereCambioPassword = false;
+
+    @Column(name = "fecha_inicio_patron")
+    private LocalDate fechaInicioPatron;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "manager_id")

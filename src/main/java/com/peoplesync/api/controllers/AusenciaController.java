@@ -50,7 +50,7 @@ public class AusenciaController {
                 fechaInicio,
                 fechaFin,
                 comentarios,
-                documento // Pasamos el archivo al servicio
+                documento
         );
 
         AusenciaResponse response = modelMapper.map(nuevaAusencia, AusenciaResponse.class);
@@ -63,7 +63,6 @@ public class AusenciaController {
     public ResponseEntity<List<AusenciaResponse>> obtenerMisAusencias(
             @AuthenticationPrincipal Usuario usuarioAutenticado) {
 
-        // Busco las ausencias del usuario en base de datos
         List<Ausencia> misAusencias = ausenciaRepository.findByUsuarioIdOrderByFechaInicioDesc(usuarioAutenticado.getId());
 
         List<AusenciaResponse> response = misAusencias.stream()
@@ -84,12 +83,11 @@ public class AusenciaController {
 
         Resource recurso = ausenciaService.cargarJustificante(id, usuarioAutenticado);
 
-        // Intentamos determinar el tipo de contenido (PDF, JPG, etc.)
         String contentType = "application/octet-stream";
         try {
             contentType = java.nio.file.Files.probeContentType(Paths.get(recurso.getURI()));
         } catch (IOException ex) {
-            // Si falla, usamos el genérico
+            // Silently ignore and use default
         }
 
         return ResponseEntity.ok()
@@ -98,14 +96,10 @@ public class AusenciaController {
                 .body(recurso);
     }
 
-    // =========================================================
-    // KPB -> ENDPOINTS PARA MANAGERS Y ADMINS
-    // =========================================================
-
     @GetMapping("/pendientes")
-    public ResponseEntity<List<AusenciaResponse>> obtenerPendientes() {
+    public ResponseEntity<List<AusenciaResponse>> obtenerPendientes(@AuthenticationPrincipal Usuario usuarioAutenticado) {
 
-        List<Ausencia> pendientes = ausenciaService.obtenerAusenciasPendientes();
+        List<Ausencia> pendientes = ausenciaService.obtenerAusenciasPendientes(usuarioAutenticado);
 
         List<AusenciaResponse> response = pendientes.stream()
                 .map(ausencia -> {
@@ -124,7 +118,6 @@ public class AusenciaController {
             @PathVariable UUID id,
             @Valid @RequestBody EstadoAusenciaRequest request) {
 
-        // Solo admitimos que la pasen a APROBADA o RECHAZADA
         if (request.getEstado() == com.peoplesync.api.enums.EstadoAusencia.PENDIENTE) {
             throw new IllegalArgumentException("El estado debe ser APROBADA o RECHAZADA");
         }

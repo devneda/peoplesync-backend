@@ -1,7 +1,9 @@
 package com.peoplesync.api.repositories;
 
+import com.peoplesync.api.enums.Rol;
 import com.peoplesync.api.models.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -10,13 +12,15 @@ import java.util.UUID;
 
 @Repository
 public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
-    // TODO buscar al usuario cuando intente loguearse
     Optional<Usuario> findByEmail(String email);
 
-    List<Usuario> findByManagerId(UUID managerId);
-    List<Usuario> findByRol(com.peoplesync.api.enums.Rol rol);
+    List<Usuario> findByManager(Usuario manager);
+    
+    @Query("SELECT u FROM Usuario u WHERE u.rol = 'MANAGER' OR u.rol = 'ADMIN'")
+    List<Usuario> findManagers();
 
-    // TODO evitar crear usuarios con el mismo DNI
+    List<Usuario> findByRol(Rol rol);
+
     boolean existsByDni(String dni);
     boolean existsByEmail(String email);
 }

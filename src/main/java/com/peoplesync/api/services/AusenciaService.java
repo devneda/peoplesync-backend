@@ -2,6 +2,7 @@ package com.peoplesync.api.services;
 
 import com.peoplesync.api.enums.EstadoAusencia;
 import com.peoplesync.api.enums.TipoAusencia;
+import com.peoplesync.api.enums.Rol;
 import com.peoplesync.api.models.Ausencia;
 import com.peoplesync.api.models.Usuario;
 import com.peoplesync.api.repositories.AusenciaRepository;
@@ -23,6 +24,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -47,13 +49,10 @@ public class AusenciaService {
             }
         }
 
-        // --- LÓGICA DE GUARDADO DEL DOCUMENTO ANONIMIZADO ---
         String nombreSeguroArchivo = null;
         if (documento != null && !documento.isEmpty()) {
             try {
-                // Sacamos la extensión (por ejemplo, ".pdf" o ".jpg")
                 String extension = StringUtils.getFilenameExtension(documento.getOriginalFilename());
-                // Generamos un UUID seguro para el nombre del fichero
                 nombreSeguroArchivo = UUID.randomUUID().toString() + "." + extension;
 
                 Path directorioUploads = Paths.get("uploads");
@@ -75,19 +74,27 @@ public class AusenciaService {
                 .fechaInicio(inicio)
                 .fechaFin(fin)
                 .comentarios(comentarios)
-                .rutaJustificante(nombreSeguroArchivo) // Guardamos el nombre anonimizado
+                .rutaJustificante(nombreSeguroArchivo)
                 .estado(EstadoAusencia.PENDIENTE)
                 .build();
 
         return ausenciaRepository.save(nuevaAusencia);
     }
-    // Metodo para listar lo pendiente
+
     @Transactional(readOnly = true)
-    public List<Ausencia> obtenerAusenciasPendientes() {
-        return ausenciaRepository.findByEstadoOrderByFechaInicioAsc(EstadoAusencia.PENDIENTE);
+    public List<Ausencia> obtenerAusenciasPendientes(Usuario usuarioAutenticado) {
+        List<Ausencia> todasPendientes = ausenciaRepository.findByEstadoOrderByFechaInicioAsc(EstadoAusencia.PENDIENTE);
+        
+        if (usuarioAutenticado.getRol() == Rol.ADMIN) {
+            return todasPendientes;
+        }
+
+        return todasPendientes.stream()
+                .filter(a -> a.getUsuario().getManager() != null && 
+                            a.getUsuario().getManager().getId().equals(usuarioAutenticado.getId()))
+                .collect(Collectors.toList());
     }
 
-    // Metodo para que el perfil ADMIN (jefe) apruebe o rechace
     @Transactional
     public Ausencia cambiarEstadoAusencia(UUID ausenciaId, EstadoAusencia nuevoEstado) {
         Ausencia ausencia = ausenciaRepository.findById(ausenciaId)
@@ -98,19 +105,25 @@ public class AusenciaService {
         }
 
         ausencia.setEstado(nuevoEstado);
+        
+        if (nuevoEstado == EstadoAusencia.APROBADA && ausencia.getTipo() == TipoAusencia.VACACIONES) {
+            Usuario usuario = ausencia.getUsuario();
+            long dias = ChronoUnit.DAYS.between(ausencia.getFechaInicio(), ausencia.getFechaFin()) + 1;
+            usuario.setDiasVacacionesAnuales(usuario.getDiasVacacionesAnuales() - (int) dias);
+            usuarioRepository.save(usuario);
+        }
+
         return ausenciaRepository.save(ausencia);
     }
 
-    // Metodo para que solo managers directos o el dueño del documento lo pueda descargar
     public Resource cargarJustificante(UUID ausenciaId, Usuario usuarioAutenticado) {
         Ausencia ausencia = ausenciaRepository.findById(ausenciaId)
                 .orElseThrow(() -> new IllegalArgumentException("Ausencia no encontrada"));
 
-        // SEGURIDAD RGPD: Solo el dueño, su manager o un ADMIN pueden verlo
         boolean esDueno = ausencia.getUsuario().getId().equals(usuarioAutenticado.getId());
         boolean esSuManager = ausencia.getUsuario().getManager() != null &&
                 ausencia.getUsuario().getManager().getId().equals(usuarioAutenticado.getId());
-        boolean esAdmin = usuarioAutenticado.getRol() == com.peoplesync.api.enums.Rol.ADMIN;
+        boolean esAdmin = usuarioAutenticado.getRol() == Rol.ADMIN;
 
         if (!esDueno && !esSuManager && !esAdmin) {
             throw new org.springframework.security.access.AccessDeniedException("No tienes permiso para ver este documento");
