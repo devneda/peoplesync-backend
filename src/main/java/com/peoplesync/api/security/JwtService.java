@@ -18,29 +18,34 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    @Value("${security.jwt.secret-key}")
+    @Value("${application.security.jwt.secret-key}")
     private String secretKey;
 
-    @Value("${security.jwt.expiration}")
+    @Value("${application.security.jwt.expiration}")
     private long jwtExpiration;
 
-    public String generateToken(UserDetails userDetails) {
-        if (userDetails instanceof Usuario) {
-            return generateToken((Usuario) userDetails);
-        }
+    public String extractUsername(String token) {
+        return extractClaim(token, Claims::getSubject);
+    }
 
-        return Jwts.builder()
-                .subject(userDetails.getUsername())
-                .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
-                .signWith(getSignInKey())
-                .compact();
+    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+        final Claims claims = extractAllClaims(token);
+        return claimsResolver.apply(claims);
+    }
+
+    public String generateToken(UserDetails userDetails) {
+        if (userDetails instanceof Usuario usuario) {
+            return generateToken(usuario);
+        }
+        return generateToken(new HashMap<>(), userDetails);
     }
 
     public String generateToken(Usuario usuario) {
         Map<String, Object> extraClaims = new HashMap<>();
         extraClaims.put("rol", usuario.getRol().name());
         extraClaims.put("id", usuario.getId().toString());
+        extraClaims.put("requiereCambioPassword", usuario.getRequiereCambioPassword());
+        extraClaims.put("fotoUrl", usuario.getFotoUrl());
 
         return Jwts.builder()
                 .claims(extraClaims)
@@ -51,8 +56,14 @@ public class JwtService {
                 .compact();
     }
 
-    public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);
+    public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
+        return Jwts.builder()
+                .claims(extraClaims)
+                .subject(userDetails.getUsername())
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
+                .signWith(getSignInKey())
+                .compact();
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
@@ -66,11 +77,6 @@ public class JwtService {
 
     private Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
-    }
-
-    private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token);
-        return claimsResolver.apply(claims);
     }
 
     private Claims extractAllClaims(String token) {
