@@ -41,4 +41,6 @@ public class UsuarioRequest {
     private UUID calendarioId;
     private UUID horarioId;
     private UUID patronId;
+
+    private String fotoUrl;
 }

@@ -36,4 +36,8 @@ public class UsuarioUpdateRequest {
     private UUID managerId;
 
     private String password;
+
+    private Boolean requiereCambioPassword;
+
+    private String fotoUrl;
 }

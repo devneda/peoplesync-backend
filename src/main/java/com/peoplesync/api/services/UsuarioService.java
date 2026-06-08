@@ -76,6 +76,8 @@ public class UsuarioService {
         nuevoUsuario.setDiasVacacionesAnuales(request.getDiasVacacionesAnuales() != null ? request.getDiasVacacionesAnuales() : 22);
         nuevoUsuario.setDelegacion(delegacion);
         nuevoUsuario.setActivo(true);
+        nuevoUsuario.setRequiereCambioPassword(true);
+        nuevoUsuario.setFotoUrl(request.getFotoUrl());
 
         // Asignar manager
         if (request.getManagerId() != null) {
@@ -137,6 +139,14 @@ public class UsuarioService {
             usuarioActual.setManager(null);
         }
 
+        if (request.getRequiereCambioPassword() != null) {
+            usuarioActual.setRequiereCambioPassword(request.getRequiereCambioPassword());
+        }
+
+        if (request.getFotoUrl() != null) {
+            usuarioActual.setFotoUrl(request.getFotoUrl());
+        }
+
         return usuarioRepository.save(usuarioActual);
     }
 
@@ -149,6 +159,7 @@ public class UsuarioService {
         }
 
         usuario.setPasswordHash(passwordEncoder.encode(request.getPasswordNueva()));
+        usuario.setRequiereCambioPassword(false);
         usuarioRepository.save(usuario);
     }
 
