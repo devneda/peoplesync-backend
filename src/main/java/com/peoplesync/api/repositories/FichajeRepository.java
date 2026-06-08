@@ -16,7 +16,11 @@ public interface FichajeRepository extends JpaRepository<Fichaje, UUID> {
     // Busca el último fichaje de un usuario que todavía no tenga hora de salida
     Optional<Fichaje> findFirstByUsuarioIdAndFechaHoraSalidaIsNullOrderByFechaHoraEntradaDesc(UUID usuarioId);
     List<Fichaje> findByUsuarioIdAndFechaHoraEntradaBetween(UUID usuarioId, java.time.LocalDateTime inicio, java.time.LocalDateTime fin);
-    // Cuenta cuántos usuarios DISTINTOS tienen un fichaje de entrada hoy (sin importar si han salido o no)
-    @Query("SELECT COUNT(DISTINCT f.usuario.id) FROM Fichaje f WHERE f.fechaHoraEntrada >= :inicioDia AND f.fechaHoraEntrada <= :finDia")
-    long countEmpleadosActivosHoy(@Param("inicioDia") LocalDateTime inicioDia, @Param("finDia") LocalDateTime finDia);
+    // Cuenta cuántos usuarios tienen un fichaje ABIERTO en este momento (sin hora de salida)
+    @Query("SELECT COUNT(DISTINCT f.usuario.id) FROM Fichaje f WHERE f.fechaHoraSalida IS NULL")
+    long countFichajesAbiertos();
+
+    // Encuentra los usuarios que tienen un fichaje ABIERTO en este momento
+    @Query("SELECT DISTINCT f.usuario FROM Fichaje f WHERE f.fechaHoraSalida IS NULL")
+    List<com.peoplesync.api.models.Usuario> findUsuariosConFichajeAbierto();
 }

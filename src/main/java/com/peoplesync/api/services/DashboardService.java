@@ -31,15 +31,20 @@ public class DashboardService {
 
         long totalEmpleados = usuarioRepository.count();
         long totalDelegaciones = delegacionRepository.count();
-
-        long empleadosActivosHoy = fichajeRepository.countEmpleadosActivosHoy(inicioDia, finDia);
-        long ausenciasHoy = ausenciaRepository.countAusenciasHoy(hoyDate);
+        long fichajesAbiertos = fichajeRepository.countFichajesAbiertos();
+        long ausenciasHoy = ausenciaRepository.countAusenciasHoy(inicioDia, finDia);
 
         return DashboardStatsResponse.builder()
                 .totalEmpleados(totalEmpleados)
                 .totalDelegaciones(totalDelegaciones)
-                .empleadosActivosHoy(empleadosActivosHoy)
+                .empleadosActivosHoy(fichajesAbiertos)
                 .ausenciasHoy(ausenciasHoy)
                 .build();
+        }
+
+        @Transactional(readOnly = true)
+        public java.util.List<com.peoplesync.api.models.Usuario> obtenerUsuariosActivosHoy() {
+        return fichajeRepository.findUsuariosConFichajeAbierto();
+        }
     }
 }
