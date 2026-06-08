@@ -56,6 +56,10 @@ public class Usuario implements UserDetails {
 
     @Column(name = "activo", nullable = false)
     private Boolean activo = true;
+
+    @Column(name = "foto_url")
+    private String fotoUrl;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "calendario_id")
     private Calendario calendario;

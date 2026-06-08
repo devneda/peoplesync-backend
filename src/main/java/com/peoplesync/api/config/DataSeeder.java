@@ -2,9 +2,11 @@ package com.peoplesync.api.config;
 
 import com.peoplesync.api.enums.Rol;
 import com.peoplesync.api.enums.TipoFichaje;
+import com.peoplesync.api.models.Anuncio;
 import com.peoplesync.api.models.Delegacion;
 import com.peoplesync.api.models.Fichaje;
 import com.peoplesync.api.models.Usuario;
+import com.peoplesync.api.repositories.AnuncioRepository;
 import com.peoplesync.api.repositories.DelegacionRepository;
 import com.peoplesync.api.repositories.FichajeRepository;
 import com.peoplesync.api.repositories.UsuarioRepository;
@@ -28,6 +30,7 @@ public class DataSeeder implements CommandLineRunner {
     private final UsuarioRepository usuarioRepository;
     private final DelegacionRepository delegacionRepository;
     private final FichajeRepository fichajeRepository;
+    private final AnuncioRepository anuncioRepository;
     private final PasswordEncoder passwordEncoder;
     private final Random random = new Random();
 
@@ -39,6 +42,15 @@ public class DataSeeder implements CommandLineRunner {
     @Transactional
     public void run(String... args) throws Exception {
         if (usuarioRepository.count() > 0) {
+            // Si ya hay usuarios pero no anuncios, los añadimos
+            if (anuncioRepository.count() == 0) {
+                Usuario admin = usuarioRepository.findAll().stream()
+                        .filter(u -> u.getRol() == Rol.ADMIN)
+                        .findFirst().orElse(null);
+                if (admin != null) {
+                    sembrarAnuncios(admin);
+                }
+            }
             System.out.println("🌱 BBDD ya poblada. Omitiendo Data Seeder.");
             return;
         }
@@ -52,7 +64,7 @@ public class DataSeeder implements CommandLineRunner {
         Delegacion valencia = delegacionRepository.save(Delegacion.builder().nombre("Oficina Sur - Valencia").direccion("Calle Colón, 45").build());
 
         // 2. CREAR ADMINISTRADOR GLOBAL
-        crearUsuario("00000000A", "Admin Supremo", "admin@peoplesync.com", Rol.ADMIN, madrid, null, passwordComun);
+        Usuario adminGlobal = crearUsuario("00000000A", "Admin Supremo", "admin@peoplesync.com", Rol.ADMIN, madrid, null, passwordComun);
 
         // 3. CREAR 3 MANAGERS (Uno por delegación)
         Usuario managerMadrid = crearUsuario("11111111B", "Roberto Director", "roberto.manager@peoplesync.com", Rol.MANAGER, madrid, null, passwordComun);
@@ -95,10 +107,38 @@ public class DataSeeder implements CommandLineRunner {
         // 5. GENERAR FICHAJES (3 Meses = 90 días) PARA TODOS
         generarFichajesMasivos(todosLosEmpleadosYManagers, 90);
 
+        // 6. CREAR ANUNCIOS INICIALES
+        sembrarAnuncios(adminGlobal);
+
         System.out.println("✅ ¡Inyección de datos completada con éxito! Ya puedes iniciar sesión.");
         System.out.println("👉 Admin: admin@peoplesync.com / 123456");
         System.out.println("👉 Manager (Ej): roberto.manager@peoplesync.com / 123456");
         System.out.println("👉 Empleado (Ej): empleado1@peoplesync.com / 123456");
+    }
+
+    private void sembrarAnuncios(Usuario autor) {
+        if (anuncioRepository.count() > 0) return;
+        
+        Anuncio anuncio1 = Anuncio.builder()
+                .titulo("Cierre de Nóminas - " + LocalDate.now().getMonth().toString())
+                .contenido("Recuerda revisar tus fichajes antes del día 25 para evitar retrasos en el pago de nóminas.")
+                .categoria("NOMINAS")
+                .fechaPublicacion(LocalDateTime.now().minusHours(2))
+                .autor(autor)
+                .activo(true)
+                .build();
+                
+        Anuncio anuncio2 = Anuncio.builder()
+                .titulo("Bienvenida a los nuevos fichajes")
+                .contenido("Demos una cálida bienvenida a los 3 nuevos ingenieros que se incorporan a la delegación Central.")
+                .categoria("GENERAL")
+                .fechaPublicacion(LocalDateTime.now().minusDays(1))
+                .autor(autor)
+                .activo(true)
+                .build();
+                
+        anuncioRepository.saveAll(List.of(anuncio1, anuncio2));
+        System.out.println("📢 Anuncios iniciales creados.");
     }
 
     private Usuario crearUsuario(String dni, String nombre, String email, Rol rol, Delegacion delegacion, Usuario manager, String passwordHash) {
