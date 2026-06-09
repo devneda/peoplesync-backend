@@ -18,4 +18,5 @@ public interface AusenciaRepository extends JpaRepository<Ausencia, UUID> {
     List<Ausencia> findByEstadoOrderByFechaInicioAsc(com.peoplesync.api.enums.EstadoAusencia estado);
     // Cuenta las ausencias que están APROBADAS y cuya fecha abarca el día de hoy
     @Query("SELECT COUNT(a) FROM Ausencia a WHERE a.estado = 'APROBADA' AND a.fechaInicio <= :hoy AND a.fechaFin >= :hoy")
-    long countAusenciasHoy(@Param("hoy") LocalDate hoy);}
+    long countAusenciasHoy(@Param("hoy") LocalDate hoy);
+}

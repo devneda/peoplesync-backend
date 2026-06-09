@@ -10,8 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 @Service
 @RequiredArgsConstructor
@@ -26,13 +24,11 @@ public class DashboardService {
     public DashboardStatsResponse obtenerEstadisticasGlobales() {
 
         LocalDate hoyDate = LocalDate.now();
-        LocalDateTime inicioDia = hoyDate.atStartOfDay();
-        LocalDateTime finDia = hoyDate.atTime(LocalTime.MAX);
 
         long totalEmpleados = usuarioRepository.count();
         long totalDelegaciones = delegacionRepository.count();
         long fichajesAbiertos = fichajeRepository.countFichajesAbiertos();
-        long ausenciasHoy = ausenciaRepository.countAusenciasHoy(inicioDia, finDia);
+        long ausenciasHoy = ausenciaRepository.countAusenciasHoy(hoyDate);
 
         return DashboardStatsResponse.builder()
                 .totalEmpleados(totalEmpleados)
@@ -40,11 +36,10 @@ public class DashboardService {
                 .empleadosActivosHoy(fichajesAbiertos)
                 .ausenciasHoy(ausenciasHoy)
                 .build();
-        }
+    }
 
-        @Transactional(readOnly = true)
-        public java.util.List<com.peoplesync.api.models.Usuario> obtenerUsuariosActivosHoy() {
+    @Transactional(readOnly = true)
+    public java.util.List<com.peoplesync.api.models.Usuario> obtenerUsuariosActivosHoy() {
         return fichajeRepository.findUsuariosConFichajeAbierto();
-        }
     }
 }

@@ -31,6 +31,7 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/v1/usuarios/me/password").authenticated()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/usuarios/me").authenticated()
                         // TODO añadir rutas VIP para perfiles ADMIN/MANAGER
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/ausencias/pendientes").hasAnyRole("ADMIN", "MANAGER")
                         .requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/v1/ausencias/*/estado").hasAnyRole("ADMIN", "MANAGER")
@@ -50,9 +51,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:4173"));
+        // Permitimos todos los orígenes para facilitar el desarrollo con Android y Web simultáneamente
+        configuration.setAllowedOriginPatterns(List.of("*"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept"));
+        configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

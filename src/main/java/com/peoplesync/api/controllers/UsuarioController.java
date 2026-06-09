@@ -70,6 +70,15 @@ public class UsuarioController {
         return ResponseEntity.ok(modelMapper.map(usuarioActualizado, UsuarioResponse.class));
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<UsuarioResponse> obtenerMiPerfil() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof Usuario usuario) {
+            return ResponseEntity.ok(modelMapper.map(usuario, UsuarioResponse.class));
+        }
+        throw new IllegalStateException("No hay un usuario autenticado");
+    }
+
     @PutMapping("/me/password")
     public ResponseEntity<String> cambiarMiPassword(@Valid @RequestBody CambiarPasswordRequest request) {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
